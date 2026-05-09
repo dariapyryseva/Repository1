@@ -1,28 +1,33 @@
-from config import AppConfig, app_config, runtime_config
-from fastapi import APIRouter
-from services.runtime_service import (
-    get_runtime_config,
-    update_runtime_config,
-)
+from dependencies import get_app_config, get_runtime_config_service
+from fastapi import APIRouter, Depends
+from schemas.app_config import AppConfigModel
+from schemas.responses import HealthResponse
+from schemas.runtime_config import RuntimeConfigModel, RuntimeConfigUpdateModel
+from services.runtime_config_service import RuntimeConfigService
 
-router = APIRouter()
-
-
-@router.get("/health")
-def health():
-    return {"status": "ok"}
+router = APIRouter(tags=["configuration"])
 
 
-@router.get("/config/app")
-def get_app_config():
-    return app_config
+@router.get("/health", response_model=HealthResponse)
+def health() -> HealthResponse:
+    return HealthResponse(status="ok")
 
 
-@router.get("/config/runtime")
-def get_runtime():
-    return get_runtime_config()
+@router.get("/config/app", response_model=AppConfigModel)
+def get_app_config_endpoint(config: AppConfigModel = Depends(get_app_config)):
+    return config
 
 
-@router.put("/config/runtime")
-def update_runtime(new_config: AppConfig):
-    return update_runtime_config(new_config)
+@router.get("/config/runtime", response_model=RuntimeConfigModel)
+def get_runtime_config(
+    service: RuntimeConfigService = Depends(get_runtime_config_service),
+):
+    return service.get_config()
+
+
+@router.put("/config/runtime", response_model=RuntimeConfigModel)
+def update_runtime_config(
+    update_data: RuntimeConfigUpdateModel,
+    service: RuntimeConfigService = Depends(get_runtime_config_service),
+):
+    return service.update_config(update_data)
