@@ -1,11 +1,28 @@
-from config import app_config
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
+from fastapi.responses import RedirectResponse
+from init_dependencies import init_dependencies
 from routes.config_routes import router
 
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    deps = init_dependencies()
+    app.state.dependencies = deps
+    yield
+
+
 app = FastAPI(
-    title=app_config.app_name,
-    version=app_config.app_version,
-    description=app_config.app_description,
+    title="Laboratory FastAPI App",
+    version="1.0.0",
+    description="Учебное приложение на FastAPI",
+    lifespan=lifespan,
 )
 
 app.include_router(router)
+
+
+@app.get("/")
+async def root():
+    return RedirectResponse("/docs")
